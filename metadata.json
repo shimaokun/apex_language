@@ -1,0 +1,5 @@
+{
+  "name": "Security Platform i18n Manager",
+  "description": "A flexible multi-language i18n management system for security platforms, supporting dynamic language pack updates and versioning.",
+  "requestFramePermissions": []
+}
