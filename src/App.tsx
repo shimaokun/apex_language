@@ -52,8 +52,8 @@ import {
   zhCN as dateZhCN, 
   enUS as dateEnUS 
 } from 'date-fns/locale';
-import zh_CN from 'antd/es/locale/zh_CN';
-import en_US from 'antd/es/locale/en_US';
+import zh_CN from 'antd/locale/zh_CN';
+import en_US from 'antd/locale/en_US';
 import { motion } from 'motion/react';
 
 const { Header, Sider, Content } = Layout;
@@ -185,25 +185,34 @@ const Dashboard = () => {
       key: 'actions',
       align: 'right' as const,
       render: (_: any, record: Language) => (
-        <Popconfirm
-          title={t('modal.delete.title', '确认删除')}
-          description={t('modal.delete.content', `确定要删除语言包 ${record.name} 吗？`).replace('{name}', record.name)}
-          onConfirm={() => handleDelete(record.code)}
-          okText={t('button.confirm', '确定')}
-          cancelText={t('button.cancel', '取消')}
-          okButtonProps={{ danger: true }}
-          disabled={record.status === 1}
-        >
-          <Tooltip title={record.status === 1 ? t('delete.disabled', '激活状态无法删除') : ''}>
-            <Button 
-              type="link" 
-              disabled={record.status === 1}
-              className="px-0"
-            >
-              {t('button.delete', '删除')}
-            </Button>
-          </Tooltip>
-        </Popconfirm>
+        <Space>
+          <Button 
+            type="link" 
+            onClick={() => handleEdit(record)}
+            className="px-0"
+          >
+            {t('button.edit', '编辑')}
+          </Button>
+          <Popconfirm
+            title={t('modal.delete.title', '确认删除')}
+            description={t('modal.delete.content', `确定要删除语言包 ${record.name} 吗？`).replace('{name}', record.name)}
+            onConfirm={() => handleDelete(record.code)}
+            okText={t('button.confirm', '确定')}
+            cancelText={t('button.cancel', '取消')}
+            okButtonProps={{ danger: true }}
+            disabled={record.status === 1}
+          >
+            <Tooltip title={record.status === 1 ? t('delete.disabled', '激活状态无法删除') : ''}>
+              <Button 
+                type="link" 
+                disabled={record.status === 1}
+                className="px-0"
+              >
+                {t('button.delete', '删除')}
+              </Button>
+            </Tooltip>
+          </Popconfirm>
+        </Space>
       ),
     },
   ], [t, locale]);

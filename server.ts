@@ -189,47 +189,72 @@ async function startServer() {
 
   // API Routes
   app.get("/api/languages", (req, res) => {
-    const languages = db.prepare("SELECT * FROM languages ORDER BY updated_at DESC").all();
-    res.json(languages);
+    try {
+      const languages = db.prepare("SELECT * FROM languages ORDER BY updated_at DESC").all();
+      res.json(languages);
+    } catch (error) {
+      console.error("Get languages error:", error);
+      res.status(500).json({ error: "Failed to get languages" });
+    }
   });
 
   app.post("/api/languages/toggle", (req, res) => {
-    const { code } = req.body;
-    const transaction = db.transaction(() => {
-      // Deactivate all
-      db.prepare("UPDATE languages SET status = 0").run();
-      // Activate selected
-      db.prepare("UPDATE languages SET status = 1 WHERE code = ?").run(code);
-    });
-    transaction();
-    res.json({ success: true });
+    try {
+      const { code } = req.body;
+      const transaction = db.transaction(() => {
+        // Deactivate all
+        db.prepare("UPDATE languages SET status = 0").run();
+        // Activate selected
+        db.prepare("UPDATE languages SET status = 1 WHERE code = ?").run(code);
+      });
+      transaction();
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Toggle error:", error);
+      res.status(500).json({ error: "Failed to toggle language" });
+    }
   });
 
   app.post("/api/languages/update", (req, res) => {
-    const { code, name, version } = req.body;
-    db.prepare("UPDATE languages SET name = ?, version = ?, updated_at = CURRENT_TIMESTAMP WHERE code = ?").run(name, version, code);
-    res.json({ success: true });
+    try {
+      const { code, name, version } = req.body;
+      db.prepare("UPDATE languages SET name = ?, version = ?, updated_at = CURRENT_TIMESTAMP WHERE code = ?").run(name, version, code);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Update language error:", error);
+      res.status(500).json({ error: "Failed to update language" });
+    }
   });
 
   app.delete("/api/languages/:code", (req, res) => {
-    const { code } = req.params;
-    const transaction = db.transaction(() => {
-      db.prepare("DELETE FROM version_history WHERE lang_code = ?").run(code);
-      db.prepare("DELETE FROM translations WHERE lang_code = ?").run(code);
-      db.prepare("DELETE FROM languages WHERE code = ?").run(code);
-    });
-    transaction();
-    res.json({ success: true });
+    try {
+      const { code } = req.params;
+      const transaction = db.transaction(() => {
+        db.prepare("DELETE FROM version_history WHERE lang_code = ?").run(code);
+        db.prepare("DELETE FROM translations WHERE lang_code = ?").run(code);
+        db.prepare("DELETE FROM languages WHERE code = ?").run(code);
+      });
+      transaction();
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Delete language error:", error);
+      res.status(500).json({ error: "Failed to delete language" });
+    }
   });
 
   app.get("/api/translations/:code", (req, res) => {
-    const { code } = req.params;
-    const translations = db.prepare("SELECT key, value FROM translations WHERE lang_code = ?").all(code);
-    const result = {};
-    translations.forEach(t => {
-      result[t.key] = t.value;
-    });
-    res.json(result);
+    try {
+      const { code } = req.params;
+      const translations = db.prepare("SELECT key, value FROM translations WHERE lang_code = ?").all(code);
+      const result = {};
+      translations.forEach(t => {
+        result[t.key] = t.value;
+      });
+      res.json(result);
+    } catch (error) {
+      console.error("Get translations error:", error);
+      res.status(500).json({ error: "Failed to get translations" });
+    }
   });
 
   app.post("/api/languages/upload", (req, res) => {
@@ -291,6 +316,16 @@ async function startServer() {
       res.sendFile(path.join(__dirname, "dist", "index.html"));
     });
   }
+
+  // Global API error handler
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error("Global error:", err);
+    if (req.path.startsWith('/api/')) {
+      res.status(err.status || 500).json({ error: err.message || "Internal Server Error" });
+    } else {
+      next(err);
+    }
+  });
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);

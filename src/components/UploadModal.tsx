@@ -74,7 +74,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onSuc
         }
       } else {
         const buffer = await file.arrayBuffer();
-        const workbook = XLSX.read(buffer);
+        const workbook = XLSX.read(buffer, { type: 'array' });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json<any>(firstSheet);
         
