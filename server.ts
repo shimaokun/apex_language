@@ -321,6 +321,60 @@ async function startServer() {
     }
   });
 
+  // Asset Management API Routes
+  app.get("/api/assets", (req, res) => {
+    try {
+      const assets = fs.existsSync(path.join(DATA_DIR, "assets.json"))
+        ? JSON.parse(fs.readFileSync(path.join(DATA_DIR, "assets.json"), "utf-8"))
+        : [];
+      res.json(assets);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get assets" });
+    }
+  });
+
+  app.post("/api/assets", (req, res) => {
+    try {
+      const assets = fs.existsSync(path.join(DATA_DIR, "assets.json"))
+        ? JSON.parse(fs.readFileSync(path.join(DATA_DIR, "assets.json"), "utf-8"))
+        : [];
+      const newAsset = { 
+        ...req.body, 
+        id: req.body.id || (Date.now().toString() + Math.random().toString(36).substring(2, 9)), 
+        updated_at: new Date().toISOString() 
+      };
+      assets.push(newAsset);
+      fs.writeFileSync(path.join(DATA_DIR, "assets.json"), JSON.stringify(assets, null, 2));
+      res.json(newAsset);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create asset" });
+    }
+  });
+
+  app.put("/api/assets/:id", (req, res) => {
+    try {
+      const { id } = req.params;
+      let assets = JSON.parse(fs.readFileSync(path.join(DATA_DIR, "assets.json"), "utf-8"));
+      assets = assets.map((a: any) => a.id === id ? { ...a, ...req.body, updated_at: new Date().toISOString() } : a);
+      fs.writeFileSync(path.join(DATA_DIR, "assets.json"), JSON.stringify(assets, null, 2));
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update asset" });
+    }
+  });
+
+  app.delete("/api/assets/:id", (req, res) => {
+    try {
+      const { id } = req.params;
+      let assets = JSON.parse(fs.readFileSync(path.join(DATA_DIR, "assets.json"), "utf-8"));
+      assets = assets.filter((a: any) => a.id !== id);
+      fs.writeFileSync(path.join(DATA_DIR, "assets.json"), JSON.stringify(assets, null, 2));
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete asset" });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

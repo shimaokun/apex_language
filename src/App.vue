@@ -48,12 +48,14 @@ import zhCN from 'ant-design-vue/es/locale/zh_CN';
 import enUS from 'ant-design-vue/es/locale/en_US';
 import { useI18nStore, Language } from './stores/i18n';
 import UploadModal from './components/UploadModal.vue';
+import AssetTable from './components/AssetTable.vue';
 
 const { Header, Sider, Content } = Layout;
 
 const i18n = useI18nStore();
 const { state, t, refreshLanguages, toggleLanguage, deleteLanguage, updateLanguage, fetchDefaultTranslations, fetchTranslations } = i18n;
 
+const activeMenu = ref('config_management');
 const isUploadOpen = ref(false);
 const searchQuery = ref('');
 const isEditOpen = ref(false);
@@ -74,6 +76,10 @@ watch(() => state.locale, (newLocale) => {
   fetchTranslations(newLocale, true);
   localStorage.setItem('app_locale', newLocale);
 });
+
+const handleMenuClick = (e: any) => {
+  activeMenu.value = e.key;
+};
 
 const handleEdit = (record: Language) => {
   editingLang.value = record;
@@ -201,8 +207,9 @@ const getAntdLocale = computed(() => {
           <Menu
             theme="dark"
             mode="inline"
-            :selectedKeys="['config_management']"
+            :selectedKeys="[activeMenu]"
             :items="menuItems"
+            @click="handleMenuClick"
             class="flex-1 py-4 border-none"
           />
 
@@ -246,112 +253,117 @@ const getAntdLocale = computed(() => {
 
           <Content class="p-8 overflow-y-auto">
             <div class="max-w-7xl mx-auto">
-              <!-- Toolbar -->
-              <div class="flex flex-col sm:flex-row gap-4 justify-between items-center mb-6">
-                <Input
-                  :placeholder="t('search.placeholder', '搜索语言名称或编码...')"
-                  v-model:value="searchQuery"
-                  class="w-full sm:w-96 h-11 rounded-xl border-slate-200"
-                >
-                  <template #prefix><SearchOutlined class="text-slate-400" /></template>
-                </Input>
-                <Space size="middle" class="w-full sm:w-auto">
-                  <Tooltip :title="t('button.refresh', '刷新列表')">
-                    <Button 
-                      @click="refreshLanguages()"
-                      class="h-11 w-11 flex items-center justify-center rounded-xl"
-                    >
-                      <template #icon><ReloadOutlined :spin="state.loading" /></template>
-                    </Button>
-                  </Tooltip>
-                  <Button
-                    type="primary"
-                    @click="isUploadOpen = true"
-                    class="h-11 px-6 rounded-xl font-bold shadow-lg shadow-indigo-200"
+              <template v-if="activeMenu === 'asset_center'">
+                <AssetTable />
+              </template>
+              <template v-else>
+                <!-- Toolbar -->
+                <div class="flex flex-col sm:flex-row gap-4 justify-between items-center mb-6">
+                  <Input
+                    :placeholder="t('search.placeholder', '搜索语言名称或编码...')"
+                    v-model:value="searchQuery"
+                    class="w-full sm:w-96 h-11 rounded-xl border-slate-200"
                   >
-                    <template #icon><PlusOutlined /></template>
-                    {{ t('button.upload', '上传语言包') }}
-                  </Button>
-                </Space>
-              </div>
+                    <template #prefix><SearchOutlined class="text-slate-400" /></template>
+                  </Input>
+                  <Space size="middle" class="w-full sm:w-auto">
+                    <Tooltip :title="t('button.refresh', '刷新列表')">
+                      <Button 
+                        @click="refreshLanguages()"
+                        class="h-11 w-11 flex items-center justify-center rounded-xl"
+                      >
+                        <template #icon><ReloadOutlined :spin="state.loading" /></template>
+                      </Button>
+                    </Tooltip>
+                    <Button
+                      type="primary"
+                      @click="isUploadOpen = true"
+                      class="h-11 px-6 rounded-xl font-bold shadow-lg shadow-indigo-200"
+                    >
+                      <template #icon><PlusOutlined /></template>
+                      {{ t('button.upload', '上传语言包') }}
+                    </Button>
+                  </Space>
+                </div>
 
-              <!-- Language Table -->
-              <Card :bordered="false" class="shadow-sm rounded-2xl overflow-hidden" :body-style="{ padding: 0 }">
-                <Table
-                  :columns="columns"
-                  :data-source="filteredLanguages"
-                  row-key="code"
-                  :loading="state.loading"
-                  :pagination="{
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    class: 'px-6 py-4',
-                  }"
-                >
-                  <template #bodyCell="{ column, text, record }">
-                    <template v-if="column.key === 'name'">
-                      <Space>
-                        <Avatar shape="square" class="bg-slate-100 text-slate-500">
-                          <template #icon><TranslationOutlined /></template>
-                        </Avatar>
-                        <span class="font-semibold text-slate-900">{{ text }}</span>
-                      </Space>
+                <!-- Language Table -->
+                <Card :bordered="false" class="shadow-sm rounded-2xl overflow-hidden" :body-style="{ padding: 0 }">
+                  <Table
+                    :columns="columns"
+                    :data-source="filteredLanguages"
+                    row-key="code"
+                    :loading="state.loading"
+                    :pagination="{
+                      pageSize: 10,
+                      showSizeChanger: true,
+                      class: 'px-6 py-4',
+                    }"
+                  >
+                    <template #bodyCell="{ column, text, record }">
+                      <template v-if="column.key === 'name'">
+                        <Space>
+                          <Avatar shape="square" class="bg-slate-100 text-slate-500">
+                            <template #icon><TranslationOutlined /></template>
+                          </Avatar>
+                          <span class="font-semibold text-slate-900">{{ text }}</span>
+                        </Space>
+                      </template>
+                      <template v-else-if="column.key === 'code'">
+                        <Tag color="blue">{{ text }}</Tag>
+                      </template>
+                      <template v-else-if="column.key === 'version'">
+                        <span class="text-slate-600">{{ text }}</span>
+                      </template>
+                      <template v-else-if="column.key === 'updated_at'">
+                        <span class="text-slate-500 text-sm">
+                          {{ format(new Date(text), 'yyyy-MM-dd HH:mm', { locale: getDateLocale() }) }}
+                        </span>
+                      </template>
+                      <template v-else-if="column.key === 'status'">
+                        <Tooltip :title="text === 1 ? t('status.active', '当前已激活') : t('status.inactive', '点击激活')">
+                          <Switch 
+                            :checked="text === 1" 
+                            @change="() => {
+                              if (text !== 1) {
+                                toggleLanguage(record.code);
+                              }
+                            }"
+                            :class="text === 1 ? 'bg-emerald-500' : ''"
+                          />
+                        </Tooltip>
+                      </template>
+                      <template v-else-if="column.key === 'actions'">
+                        <Space>
+                          <Button type="link" @click="handleEdit(record)" class="px-0">
+                            {{ t('button.edit', '编辑') }}
+                          </Button>
+                          <Popconfirm
+                            :title="t('modal.delete.title', '确认删除')"
+                            :description="t('modal.delete.content', `确定要删除语言包 ${record.name} 吗？`).replace('{name}', record.name)"
+                            @confirm="handleDelete(record.code)"
+                            :ok-text="t('button.confirm', '确定')"
+                            :cancel-text="t('button.cancel', '取消')"
+                            :ok-button-props="{ danger: true }"
+                            :disabled="record.status === 1"
+                          >
+                            <Tooltip :title="record.status === 1 ? t('delete.disabled', '激活状态无法删除') : ''">
+                              <Button type="link" :disabled="record.status === 1" class="px-0">
+                                {{ t('button.delete', '删除') }}
+                              </Button>
+                            </Tooltip>
+                          </Popconfirm>
+                        </Space>
+                      </template>
                     </template>
-                    <template v-else-if="column.key === 'code'">
-                      <Tag color="blue">{{ text }}</Tag>
+                    <template #emptyText>
+                      <div class="py-12 flex flex-col items-center gap-2">
+                        <SearchOutlined class="text-slate-200 text-5xl" />
+                        <p class="text-slate-500 font-medium">{{ t('empty.no_results', '未找到匹配的语言包') }}</p>
+                      </div>
                     </template>
-                    <template v-else-if="column.key === 'version'">
-                      <span class="text-slate-600">{{ text }}</span>
-                    </template>
-                    <template v-else-if="column.key === 'updated_at'">
-                      <span class="text-slate-500 text-sm">
-                        {{ format(new Date(text), 'yyyy-MM-dd HH:mm', { locale: getDateLocale() }) }}
-                      </span>
-                    </template>
-                    <template v-else-if="column.key === 'status'">
-                      <Tooltip :title="text === 1 ? t('status.active', '当前已激活') : t('status.inactive', '点击激活')">
-                        <Switch 
-                          :checked="text === 1" 
-                          @change="() => {
-                            if (text !== 1) {
-                              toggleLanguage(record.code);
-                            }
-                          }"
-                          :class="text === 1 ? 'bg-emerald-500' : ''"
-                        />
-                      </Tooltip>
-                    </template>
-                    <template v-else-if="column.key === 'actions'">
-                      <Space>
-                        <Button type="link" @click="handleEdit(record)" class="px-0">
-                          {{ t('button.edit', '编辑') }}
-                        </Button>
-                        <Popconfirm
-                          :title="t('modal.delete.title', '确认删除')"
-                          :description="t('modal.delete.content', `确定要删除语言包 ${record.name} 吗？`).replace('{name}', record.name)"
-                          @confirm="handleDelete(record.code)"
-                          :ok-text="t('button.confirm', '确定')"
-                          :cancel-text="t('button.cancel', '取消')"
-                          :ok-button-props="{ danger: true }"
-                          :disabled="record.status === 1"
-                        >
-                          <Tooltip :title="record.status === 1 ? t('delete.disabled', '激活状态无法删除') : ''">
-                            <Button type="link" :disabled="record.status === 1" class="px-0">
-                              {{ t('button.delete', '删除') }}
-                            </Button>
-                          </Tooltip>
-                        </Popconfirm>
-                      </Space>
-                    </template>
-                  </template>
-                  <template #emptyText>
-                    <div class="py-12 flex flex-col items-center gap-2">
-                      <SearchOutlined class="text-slate-200 text-5xl" />
-                      <p class="text-slate-500 font-medium">{{ t('empty.no_results', '未找到匹配的语言包') }}</p>
-                    </div>
-                  </template>
-                </Table>
-              </Card>
+                  </Table>
+                </Card>
+              </template>
             </div>
           </Content>
         </Layout>
