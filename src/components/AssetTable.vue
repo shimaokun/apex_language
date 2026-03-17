@@ -109,15 +109,15 @@ onMounted(fetchAssets);
 </script>
 
 <template>
-  <div class="p-6">
-    <div class="flex justify-between mb-4">
+  <div class="p-6 flex-1 flex flex-col min-h-0 h-full">
+    <div class="flex justify-between mb-4 shrink-0">
       <Input v-model:value="searchQuery" placeholder="搜索资产..." class="w-64">
         <template #prefix><SearchOutlined /></template>
       </Input>
       <Button type="primary" @click="handleAdd"><PlusOutlined /> 新增资产</Button>
     </div>
     
-    <Table :columns="columns" :data-source="filteredAssets" :loading="loading" row-key="id">
+    <Table class="flex-table bg-white rounded-xl shadow-sm overflow-hidden" :columns="columns" :data-source="filteredAssets" :loading="loading" row-key="id">
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'status'">
           <Tag :color="record.status === 'Active' ? 'success' : 'warning'">{{ record.status }}</Tag>

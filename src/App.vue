@@ -49,6 +49,12 @@ import enUS from 'ant-design-vue/es/locale/en_US';
 import { useI18nStore, Language } from './stores/i18n';
 import UploadModal from './components/UploadModal.vue';
 import AssetTable from './components/AssetTable.vue';
+import SecurityMonitoring from './components/SecurityMonitoring.vue';
+import ThreatAnalysis from './components/ThreatAnalysis.vue';
+import ThreatResponse from './components/ThreatResponse.vue';
+import RiskManagement from './components/RiskManagement.vue';
+import CloudSecurity from './components/CloudSecurity.vue';
+import AppCenter from './components/AppCenter.vue';
 
 const { Header, Sider, Content } = Layout;
 
@@ -169,6 +175,11 @@ const getAntdLocale = computed(() => {
   if (state.locale.startsWith('en')) return enUS;
   return enUS;
 });
+
+const currentMenuTitle = computed(() => {
+  const item = menuItems.value.find(m => m.key === activeMenu.value);
+  return item ? item.label : t('header.title', '语言包管理');
+});
 </script>
 
 <template>
@@ -183,7 +194,7 @@ const getAntdLocale = computed(() => {
       components: {
         Layout: {
           siderBg: '#1E222D',
-          headerBg: '#ffffff',
+          headerBg: '#1E222D',
         },
         Menu: {
           darkItemBg: '#1E222D',
@@ -195,8 +206,8 @@ const getAntdLocale = computed(() => {
     }"
   >
     <AntdApp>
-      <Layout class="min-h-screen bg-[#F8FAFC]">
-        <Sider :width="256" class="overflow-hidden flex flex-col">
+      <Layout class="h-screen overflow-hidden bg-[#F8FAFC]">
+        <Sider :width="256" class="h-full flex flex-col">
           <div class="p-6 flex items-center gap-3 border-b border-white/5">
             <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20">
               <SafetyOutlined class="text-xl text-white" />
@@ -246,19 +257,37 @@ const getAntdLocale = computed(() => {
           </div>
         </Sider>
 
-        <Layout>
-          <Header class="px-8 border-b border-slate-200 flex items-center h-16 sticky top-0 z-30">
-            <h2 class="text-sm font-bold text-slate-700 m-0">{{ t('header.title', '语言包管理') }}</h2>
+        <Layout class="flex flex-col h-full">
+          <Header class="px-8 flex items-center justify-start h-16 shrink-0 z-30 bg-[#1E222D] shadow-md">
+            <h2 class="text-lg font-bold text-white m-0 tracking-wide">{{ currentMenuTitle }}</h2>
           </Header>
 
-          <Content class="p-8 overflow-y-auto">
-            <div class="max-w-7xl mx-auto">
-              <template v-if="activeMenu === 'asset_center'">
+          <Content class="p-8 overflow-y-auto flex-1 flex flex-col min-h-0">
+            <div class="max-w-7xl mx-auto w-full flex-1 flex flex-col min-h-0">
+              <template v-if="activeMenu === 'monitoring'">
+                <SecurityMonitoring />
+              </template>
+              <template v-else-if="activeMenu === 'threat_analysis'">
+                <ThreatAnalysis />
+              </template>
+              <template v-else-if="activeMenu === 'threat_response'">
+                <ThreatResponse />
+              </template>
+              <template v-else-if="activeMenu === 'risk_management'">
+                <RiskManagement />
+              </template>
+              <template v-else-if="activeMenu === 'cloud_security'">
+                <CloudSecurity />
+              </template>
+              <template v-else-if="activeMenu === 'app_center'">
+                <AppCenter />
+              </template>
+              <template v-else-if="activeMenu === 'asset_center'">
                 <AssetTable />
               </template>
-              <template v-else>
+              <template v-else-if="activeMenu === 'config_management'">
                 <!-- Toolbar -->
-                <div class="flex flex-col sm:flex-row gap-4 justify-between items-center mb-6">
+                <div class="flex flex-col sm:flex-row gap-4 justify-between items-center mb-6 shrink-0">
                   <Input
                     :placeholder="t('search.placeholder', '搜索语言名称或编码...')"
                     v-model:value="searchQuery"
@@ -287,8 +316,9 @@ const getAntdLocale = computed(() => {
                 </div>
 
                 <!-- Language Table -->
-                <Card :bordered="false" class="shadow-sm rounded-2xl overflow-hidden" :body-style="{ padding: 0 }">
+                <Card :bordered="false" class="shadow-sm rounded-2xl overflow-hidden flex-table-wrapper" :body-style="{ padding: 0 }">
                   <Table
+                    class="flex-table"
                     :columns="columns"
                     :data-source="filteredLanguages"
                     row-key="code"
@@ -419,5 +449,63 @@ body {
 
 .ant-menu-dark {
   background: #1E222D !important;
+}
+
+/* Flex Table Styles */
+.flex-table-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 600px;
+}
+.flex-table-wrapper > .ant-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+}
+.flex-table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 600px;
+}
+.flex-table-wrapper .flex-table {
+  min-height: 0;
+}
+.flex-table .ant-table-wrapper,
+.flex-table .ant-spin-nested-loading,
+.flex-table .ant-spin-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.flex-table .ant-table {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.flex-table .ant-table-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.flex-table .ant-table-content {
+  flex: 1;
+  overflow-y: auto;
+}
+.flex-table .ant-table-thead > tr > th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fafafa;
+}
+.flex-table .ant-table-body {
+  flex: 1;
+  overflow-y: auto;
 }
 </style>
