@@ -1,145 +1,87 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, reactive } from 'vue';
-import { 
-  Table, Button, Input, Modal, Form, Select, message, Space, Popconfirm, Tag 
-} from 'ant-design-vue';
-import { PlusOutlined, SearchOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons-vue';
+import { ref } from 'vue';
+import { Card, Tree, Table, Upload, Dropdown, Menu, Button, Input, Space, Tag, message } from 'ant-design-vue';
+import { UploadOutlined, DownOutlined, SearchOutlined, ClusterOutlined } from '@ant-design/icons-vue';
 
-interface Asset {
-  id: string;
-  name: string;
-  type: string;
-  status: string;
-  owner: string;
-  updated_at: string;
-}
-
-const assets = ref<Asset[]>([]);
-const loading = ref(false);
-const searchQuery = ref('');
-const isModalOpen = ref(false);
-const editingAsset = ref<Asset | null>(null);
-const formRef = ref();
-const formState = reactive({ name: '', type: 'Server', status: 'Active', owner: '' });
-
-const fetchAssets = async () => {
-  loading.value = true;
-  try {
-    const res = await fetch('/api/assets');
-    const data = await res.json();
-    if (data.length === 0) {
-      // Add mock data if empty
-      const mockData = [
-        { id: '1', name: 'Production Server A', type: 'Server', status: 'Active', owner: 'Admin', updated_at: new Date().toISOString() },
-        { id: '2', name: 'Firewall B', type: 'Network', status: 'Active', owner: 'Security', updated_at: new Date().toISOString() },
-        { id: '3', name: 'Backup Storage C', type: 'Server', status: 'Inactive', owner: 'IT', updated_at: new Date().toISOString() },
-      ];
-      for (const item of mockData) {
-        await fetch('/api/assets', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(item),
-        });
-      }
-      assets.value = mockData;
-    } else {
-      assets.value = data;
-    }
-  } catch (err) {
-    message.error('获取资产失败');
-  } finally {
-    loading.value = false;
-  }
-};
-
-const handleAdd = () => {
-  editingAsset.value = null;
-  formState.name = '';
-  formState.type = 'Server';
-  formState.status = 'Active';
-  formState.owner = '';
-  isModalOpen.value = true;
-};
-
-const handleEdit = (record: Asset) => {
-  editingAsset.value = record;
-  formState.name = record.name;
-  formState.type = record.type;
-  formState.status = record.status;
-  formState.owner = record.owner;
-  isModalOpen.value = true;
-};
-
-const handleDelete = async (id: string) => {
-  await fetch(`/api/assets/${id}`, { method: 'DELETE' });
-  message.success('删除成功');
-  fetchAssets();
-};
-
-const handleSave = async () => {
-  await formRef.value.validate();
-  const url = editingAsset.value ? `/api/assets/${editingAsset.value.id}` : '/api/assets';
-  const method = editingAsset.value ? 'PUT' : 'POST';
-  
-  await fetch(url, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(formState),
-  });
-  
-  message.success('保存成功');
-  isModalOpen.value = false;
-  fetchAssets();
-};
-
-const filteredAssets = computed(() => {
-  return assets.value.filter(a => a.name.toLowerCase().includes(searchQuery.value.toLowerCase()));
-});
-
-const columns = [
-  { title: '资产名称', dataIndex: 'name', key: 'name' },
-  { title: '类型', dataIndex: 'type', key: 'type' },
-  { title: '状态', dataIndex: 'status', key: 'status' },
-  { title: '所有者', dataIndex: 'owner', key: 'owner' },
-  { title: '最后更新', dataIndex: 'updated_at', key: 'updated_at' },
-  { title: '操作', key: 'actions', align: 'right' },
+const menuItems = [
+  { key: 'export', label: '导出资产' },
+  { key: 'scan', label: '批量扫描' }
 ];
 
-onMounted(fetchAssets);
+const treeData = ref([
+  { title: '总部', key: '0-0', children: [
+    { title: '研发部', key: '0-0-0' },
+    { title: '市场部', key: '0-0-1' },
+  ]},
+  { title: '分公司', key: '0-1', children: [
+    { title: '销售部', key: '0-1-0' },
+  ]}
+]);
+
+const selectedKeys = ref(['0-0-0']);
+const onSelect = (keys: any) => {
+  selectedKeys.value = keys;
+  message.info(`已切换至部门: ${keys[0]}`);
+};
+
+const columns = [
+  { title: '资产名称', dataIndex: 'name' },
+  { title: 'IP 地址', dataIndex: 'ip' },
+  { title: '状态', dataIndex: 'status' },
+  { title: '操作', key: 'action' }
+];
+
+const data = ref([
+  { key: '1', name: 'Web Server 01', ip: '192.168.1.10', status: '运行中' },
+  { key: '2', name: 'DB Server 01', ip: '192.168.1.20', status: '离线' },
+  { key: '3', name: 'Cache Server 01', ip: '192.168.1.30', status: '运行中' },
+]);
+
+const handleUpload = () => {
+  message.success('文件上传成功');
+};
+
+const handleMenuClick = (e: any) => {
+  message.success(`执行批量操作: ${e.key}`);
+};
 </script>
-
 <template>
-  <div class="p-6 flex-1 flex flex-col min-h-0 h-full">
-    <div class="flex justify-between mb-4 shrink-0">
-      <Input v-model:value="searchQuery" placeholder="搜索资产..." class="w-64">
-        <template #prefix><SearchOutlined /></template>
-      </Input>
-      <Button type="primary" @click="handleAdd"><PlusOutlined /> 新增资产</Button>
+  <div class="p-6 flex-1 flex gap-6 min-h-0 h-full">
+    <Card class="w-64 shrink-0 overflow-y-auto shadow-sm rounded-xl" title="组织架构 (Tree)" :bordered="false">
+      <Tree :tree-data="treeData" v-model:selectedKeys="selectedKeys" @select="onSelect" defaultExpandAll>
+        <template #icon><ClusterOutlined /></template>
+      </Tree>
+    </Card>
+    <div class="flex-1 flex flex-col min-h-0">
+      <div class="flex justify-between mb-4 shrink-0">
+        <Space>
+          <Input placeholder="搜索资产..." class="w-64"><template #prefix><SearchOutlined /></template></Input>
+          <Dropdown>
+            <template #overlay>
+              <Menu @click="handleMenuClick" :items="menuItems" />
+            </template>
+            <Button>批量操作 (Dropdown) <DownOutlined /></Button>
+          </Dropdown>
+        </Space>
+        <Upload :showUploadList="false" :customRequest="handleUpload">
+          <Button type="primary"><UploadOutlined /> 导入资产 (Upload)</Button>
+        </Upload>
+      </div>
+      <Card :bordered="false" class="shadow-sm rounded-xl flex-table-wrapper" :body-style="{ padding: 0 }">
+        <Table class="flex-table" :columns="columns" :dataSource="data" :pagination="{ pageSize: 10 }">
+          <template #bodyCell="{ column, record, text }">
+            <template v-if="column.dataIndex === 'status'">
+              <Tag :color="record.status === '运行中' ? 'green' : 'red'">{{ record.status }}</Tag>
+            </template>
+            <template v-else-if="column.key === 'action'">
+              <Button type="link" @click="message.info('查看详情')">详情</Button>
+            </template>
+            <template v-else>
+              {{ text }}
+            </template>
+          </template>
+        </Table>
+      </Card>
     </div>
-    
-    <Table class="flex-table bg-white rounded-xl shadow-sm overflow-hidden" :columns="columns" :data-source="filteredAssets" :loading="loading" row-key="id">
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'status'">
-          <Tag :color="record.status === 'Active' ? 'success' : 'warning'">{{ record.status }}</Tag>
-        </template>
-        <template v-if="column.key === 'actions'">
-          <Space>
-            <Button type="link" @click="handleEdit(record)"><EditOutlined /></Button>
-            <Popconfirm title="确定删除?" @confirm="handleDelete(record.id)">
-              <Button type="link" danger><DeleteOutlined /></Button>
-            </Popconfirm>
-          </Space>
-        </template>
-      </template>
-    </Table>
-
-    <Modal v-model:open="isModalOpen" :title="editingAsset ? '编辑资产' : '新增资产'" @ok="handleSave">
-      <Form ref="formRef" :model="formState" layout="vertical">
-        <Form.Item name="name" label="名称" :rules="[{ required: true }]"><Input v-model:value="formState.name" /></Form.Item>
-        <Form.Item name="type" label="类型"><Select v-model:value="formState.type"><Select.Option value="Server">Server</Select.Option><Select.Option value="Network">Network</Select.Option></Select></Form.Item>
-        <Form.Item name="status" label="状态"><Select v-model:value="formState.status"><Select.Option value="Active">Active</Select.Option><Select.Option value="Inactive">Inactive</Select.Option></Select></Form.Item>
-        <Form.Item name="owner" label="所有者"><Input v-model:value="formState.owner" /></Form.Item>
-      </Form>
-    </Modal>
   </div>
 </template>

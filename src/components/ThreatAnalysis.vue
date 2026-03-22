@@ -1,67 +1,102 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Table, Tag, Input, Button, Space, Typography } from 'ant-design-vue';
-import { SearchOutlined, FilterOutlined } from '@ant-design/icons-vue';
-
-const { Title } = Typography;
-
-const searchQuery = ref('');
+import { computed } from 'vue';
+import { Table, Tag, Button, Drawer, Descriptions, Badge, Space, message } from 'ant-design-vue';
+import { h } from 'vue';
 
 const columns = [
-  { title: '威胁 ID', dataIndex: 'id', key: 'id' },
-  { title: '威胁类型', dataIndex: 'type', key: 'type' },
-  { title: '严重程度', dataIndex: 'severity', key: 'severity' },
-  { title: '源地址', dataIndex: 'source', key: 'source' },
-  { title: '目标资产', dataIndex: 'target', key: 'target' },
-  { title: '发现时间', dataIndex: 'time', key: 'time' },
-  { title: '状态', dataIndex: 'status', key: 'status' },
-  { title: '操作', key: 'actions', align: 'right' },
+  { title: '威胁 ID', dataIndex: 'id' },
+  { title: '威胁类型', dataIndex: 'type' },
+  { title: '严重程度', dataIndex: 'severity' },
+  { title: '状态', dataIndex: 'status' },
+  { title: '操作', key: 'action' }
 ];
 
 const data = ref([
-  { id: 'TH-2026-001', type: 'SQL 注入', severity: 'High', source: '185.15.x.x', target: 'Web Server 01', time: '2026-03-14 10:23:11', status: '未处理' },
-  { id: 'TH-2026-002', type: '暴力破解', severity: 'Medium', source: '112.45.x.x', target: 'SSH Gateway', time: '2026-03-14 09:15:42', status: '已阻断' },
-  { id: 'TH-2026-003', type: '跨站脚本 (XSS)', severity: 'Low', source: '203.11.x.x', target: 'Customer Portal', time: '2026-03-13 16:44:09', status: '已处理' },
-  { id: 'TH-2026-004', type: '勒索软件活动', severity: 'Critical', source: '未知', target: 'File Server B', time: '2026-03-13 11:05:22', status: '调查中' },
+  { key: '1', id: 'TH-001', type: 'SQL 注入', severity: '高危', status: '未处理', desc: '在 /api/login 接口检测到 SQL 注入攻击尝试。' },
+  { key: '2', id: 'TH-002', type: 'XSS 攻击', severity: '中危', status: '已拦截', desc: '在留言板页面检测到反射型 XSS。' },
+  { key: '3', id: 'TH-003', type: '异常登录', severity: '低危', status: '未处理', desc: '用户 admin 在异地登录成功。' },
 ]);
 
-const getSeverityColor = (severity: string) => {
-  const map: Record<string, string> = {
-    'Critical': 'purple',
-    'High': 'red',
-    'Medium': 'orange',
-    'Low': 'blue'
-  };
-  return map[severity] || 'default';
+const selectedRowKeys = ref([]);
+const onSelectChange = (keys: any) => {
+  selectedRowKeys.value = keys;
+};
+
+const drawerVisible = ref(false);
+const activeRecord = ref<any>(null);
+
+const getDescriptionItems = () => {
+  if (!activeRecord.value) return [];
+  return [
+    { label: '威胁 ID', children: activeRecord.value.id },
+    { label: '类型', children: activeRecord.value.type },
+    { 
+      label: '严重程度', 
+      children: h(Tag, { color: 'red' }, () => activeRecord.value.severity) 
+    }
+  ];
+};
+
+const showDetails = (record: any) => {
+  activeRecord.value = record;
+  drawerVisible.value = true;
+};
+
+const handleBatchProcess = () => {
+  if (selectedRowKeys.value.length === 0) {
+    message.warning('请先选择威胁事件');
+    return;
+  }
+  message.success(`成功批量处理 ${selectedRowKeys.value.length} 个事件`);
+  selectedRowKeys.value = [];
 };
 </script>
-
 <template>
   <div class="p-6 flex-1 flex flex-col min-h-0 h-full">
     <div class="flex justify-between mb-4 shrink-0">
       <Space>
-        <Input v-model:value="searchQuery" placeholder="搜索威胁 ID 或类型..." class="w-64">
-          <template #prefix><SearchOutlined /></template>
-        </Input>
-        <Button><FilterOutlined /> 筛选</Button>
+        <Button type="primary" @click="handleBatchProcess">批量处理 (Row Selection)</Button>
+        <Button @click="message.info('导出成功')">导出报告</Button>
       </Space>
-      <Button type="primary" danger>导出报告</Button>
+    </div>
+    <div class="flex-table-wrapper bg-white rounded-xl shadow-sm overflow-hidden">
+      <Table 
+        class="flex-table" 
+        :columns="columns" 
+        :dataSource="data" 
+        :rowSelection="{ selectedRowKeys, onChange: onSelectChange }"
+        :expandRowByClick="true"
+      >
+        <template #expandedRowRender="{ record }">
+          <p style="margin: 0" class="text-slate-500">详细描述 (Expandable Row): {{ record.desc }}</p>
+        </template>
+        <template #bodyCell="{ column, record, text }">
+          <template v-if="column.dataIndex === 'severity'">
+            <Tag :color="record.severity === '高危' ? 'red' : record.severity === '中危' ? 'orange' : 'blue'">{{ record.severity }}</Tag>
+          </template>
+          <template v-else-if="column.dataIndex === 'status'">
+            <Badge :status="record.status === '未处理' ? 'error' : 'success'" :text="record.status" />
+          </template>
+          <template v-else-if="column.key === 'action'">
+            <Button type="link" @click.stop="showDetails(record)">深度分析 (Drawer)</Button>
+          </template>
+          <template v-else>
+            {{ text }}
+          </template>
+        </template>
+      </Table>
     </div>
 
-    <Table :columns="columns" :data-source="data" class="flex-table bg-white rounded-xl shadow-sm overflow-hidden" :pagination="{ pageSize: 10 }">
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'severity'">
-          <Tag :color="getSeverityColor(record.severity)">{{ record.severity }}</Tag>
-        </template>
-        <template v-if="column.key === 'status'">
-          <Tag :color="record.status === '已阻断' || record.status === '已处理' ? 'success' : record.status === '调查中' ? 'processing' : 'error'">
-            {{ record.status }}
-          </Tag>
-        </template>
-        <template v-if="column.key === 'actions'">
-          <Button type="link" size="small">详情分析</Button>
-        </template>
+    <Drawer v-model:open="drawerVisible" title="威胁深度分析报告" placement="right" width="500">
+      <template v-if="activeRecord">
+        <Descriptions title="基本信息 (Descriptions)" bordered :column="1" :items="getDescriptionItems()" />
+        <div class="mt-6">
+          <h3 class="font-bold mb-4">处置建议</h3>
+          <p class="text-slate-600">建议立即封禁源 IP，并检查相关应用代码是否存在漏洞。</p>
+          <Button type="primary" class="mt-4" @click="message.success('已下发封禁指令'); drawerVisible = false">一键封禁</Button>
+        </div>
       </template>
-    </Table>
+    </Drawer>
   </div>
 </template>

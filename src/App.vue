@@ -39,7 +39,12 @@ import {
   TranslationOutlined,
   SafetyOutlined,
   EditOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  ScanOutlined,
+  FileDoneOutlined,
+  UserSwitchOutlined,
+  LockOutlined,
+  ApiOutlined
 } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import { format } from 'date-fns';
@@ -55,6 +60,11 @@ import ThreatResponse from './components/ThreatResponse.vue';
 import RiskManagement from './components/RiskManagement.vue';
 import CloudSecurity from './components/CloudSecurity.vue';
 import AppCenter from './components/AppCenter.vue';
+import VulnScanning from './components/VulnScanning.vue';
+import ComplianceAudit from './components/ComplianceAudit.vue';
+import IdentityAccess from './components/IdentityAccess.vue';
+import DataLeakage from './components/DataLeakage.vue';
+import ApiSecurity from './components/ApiSecurity.vue';
 
 const { Header, Sider, Content } = Layout;
 
@@ -85,6 +95,19 @@ watch(() => state.locale, (newLocale) => {
 
 const handleMenuClick = (e: any) => {
   activeMenu.value = e.key;
+};
+
+const userMenuItems = computed(() => [
+  { key: 'profile', label: t('user.profile', '个人中心') },
+  { key: 'logout', label: t('user.logout', '退出登录'), danger: true }
+]);
+
+const handleUserMenuClick = ({ key }: { key: string }) => {
+  if (key === 'logout') {
+    message.success(t('user.logoutSuccess', '已退出登录'));
+  } else {
+    message.info(`点击了: ${key}`);
+  }
 };
 
 const handleEdit = (record: Language) => {
@@ -126,6 +149,11 @@ const menuItems = computed(() => [
   { key: 'risk_management', icon: () => h(SafetyCertificateOutlined), label: t('menu.risk_management', '风险管理') },
   { key: 'asset_center', icon: () => h(DeploymentUnitOutlined), label: t('menu.asset_center', '资产中心') },
   { key: 'cloud_security', icon: () => h(CloudServerOutlined), label: t('menu.cloud_security', '云安全中心') },
+  { key: 'vuln_scanning', icon: () => h(ScanOutlined), label: t('menu.vuln_scanning', '漏洞扫描') },
+  { key: 'compliance_audit', icon: () => h(FileDoneOutlined), label: t('menu.compliance_audit', '合规审计') },
+  { key: 'identity_access', icon: () => h(UserSwitchOutlined), label: t('menu.identity_access', '身份与访问') },
+  { key: 'data_leakage', icon: () => h(LockOutlined), label: t('menu.data_leakage', '数据防泄漏') },
+  { key: 'api_security', icon: () => h(ApiOutlined), label: t('menu.api_security', 'API 安全') },
   { key: 'config_management', icon: () => h(SettingOutlined), label: t('menu.config_management', '配置管理') },
   { key: 'app_center', icon: () => h(AppstoreOutlined), label: t('menu.app_center', '应用中心') },
 ]);
@@ -248,10 +276,7 @@ const currentMenuTitle = computed(() => {
                 <DownOutlined class="text-xs text-slate-500 group-hover:text-white transition-colors" />
               </div>
               <template #overlay>
-                <Menu>
-                  <Menu.Item key="profile">{{ t('user.profile', '个人中心') }}</Menu.Item>
-                  <Menu.Item key="logout" danger>{{ t('user.logout', '退出登录') }}</Menu.Item>
-                </Menu>
+                <Menu @click="handleUserMenuClick" :items="userMenuItems" />
               </template>
             </Dropdown>
           </div>
@@ -278,6 +303,21 @@ const currentMenuTitle = computed(() => {
               </template>
               <template v-else-if="activeMenu === 'cloud_security'">
                 <CloudSecurity />
+              </template>
+              <template v-else-if="activeMenu === 'vuln_scanning'">
+                <VulnScanning />
+              </template>
+              <template v-else-if="activeMenu === 'compliance_audit'">
+                <ComplianceAudit />
+              </template>
+              <template v-else-if="activeMenu === 'identity_access'">
+                <IdentityAccess />
+              </template>
+              <template v-else-if="activeMenu === 'data_leakage'">
+                <DataLeakage />
+              </template>
+              <template v-else-if="activeMenu === 'api_security'">
+                <ApiSecurity />
               </template>
               <template v-else-if="activeMenu === 'app_center'">
                 <AppCenter />
@@ -383,6 +423,9 @@ const currentMenuTitle = computed(() => {
                             </Tooltip>
                           </Popconfirm>
                         </Space>
+                      </template>
+                      <template v-else>
+                        {{ text }}
                       </template>
                     </template>
                     <template #emptyText>
