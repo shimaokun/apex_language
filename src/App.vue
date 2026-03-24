@@ -44,7 +44,10 @@ import {
   FileDoneOutlined,
   UserSwitchOutlined,
   LockOutlined,
-  ApiOutlined
+  ApiOutlined,
+  FormOutlined,
+  DesktopOutlined,
+  MessageOutlined
 } from '@ant-design/icons-vue';
 import { message } from 'ant-design-vue';
 import { format } from 'date-fns';
@@ -65,6 +68,9 @@ import ComplianceAudit from './components/ComplianceAudit.vue';
 import IdentityAccess from './components/IdentityAccess.vue';
 import DataLeakage from './components/DataLeakage.vue';
 import ApiSecurity from './components/ApiSecurity.vue';
+import UIDataEntry from './components/UIDataEntry.vue';
+import UIDataDisplay from './components/UIDataDisplay.vue';
+import UIFeedback from './components/UIFeedback.vue';
 
 const { Header, Sider, Content } = Layout;
 
@@ -156,6 +162,16 @@ const menuItems = computed(() => [
   { key: 'api_security', icon: () => h(ApiOutlined), label: t('menu.api_security', 'API 安全') },
   { key: 'config_management', icon: () => h(SettingOutlined), label: t('menu.config_management', '配置管理') },
   { key: 'app_center', icon: () => h(AppstoreOutlined), label: t('menu.app_center', '应用中心') },
+  {
+    key: 'ui_components',
+    icon: () => h(AppstoreOutlined),
+    label: 'Antd 组件库展示',
+    children: [
+      { key: 'ui_data_entry', icon: () => h(FormOutlined), label: '数据录入' },
+      { key: 'ui_data_display', icon: () => h(DesktopOutlined), label: '数据展示' },
+      { key: 'ui_feedback', icon: () => h(MessageOutlined), label: '反馈组件' },
+    ]
+  }
 ]);
 
 const getDateLocale = () => {
@@ -205,8 +221,17 @@ const getAntdLocale = computed(() => {
 });
 
 const currentMenuTitle = computed(() => {
-  const item = menuItems.value.find(m => m.key === activeMenu.value);
-  return item ? item.label : t('header.title', '语言包管理');
+  let found = menuItems.value.find(m => m.key === activeMenu.value);
+  if (!found) {
+    // Check children
+    for (const item of menuItems.value) {
+      if (item.children) {
+        const child = item.children.find(c => c.key === activeMenu.value);
+        if (child) return child.label;
+      }
+    }
+  }
+  return found ? found.label : t('header.title', '语言包管理');
 });
 </script>
 
@@ -235,50 +260,52 @@ const currentMenuTitle = computed(() => {
   >
     <AntdApp>
       <Layout class="h-screen overflow-hidden bg-[#F8FAFC]">
-        <Sider :width="256" class="h-full flex flex-col">
-          <div class="p-6 flex items-center gap-3 border-b border-white/5">
-            <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20">
-              <SafetyOutlined class="text-xl text-white" />
-            </div>
-            <span class="text-lg font-bold text-white tracking-tight">{{ t('sidebar.title', 'APEX 安全防护') }}</span>
-          </div>
-          
-          <Menu
-            theme="dark"
-            mode="inline"
-            :selectedKeys="[activeMenu]"
-            :items="menuItems"
-            @click="handleMenuClick"
-            class="flex-1 py-4 border-none"
-          />
-
-          <div class="p-4 border-t border-white/5 space-y-4">
-            <div class="flex items-center justify-around text-slate-400">
-              <Button type="text" class="hover:text-white">
-                <template #icon><AppstoreOutlined class="text-slate-400" /></template>
-              </Button>
-              <Button type="text" class="hover:text-white">
-                <template #icon><UserOutlined class="text-slate-400" /></template>
-              </Button>
-              <Button type="text" class="hover:text-white">
-                <template #icon><HomeOutlined class="text-slate-400" /></template>
-              </Button>
+        <Sider :width="256" class="h-full">
+          <div class="h-full flex flex-col">
+            <div class="p-6 flex items-center gap-3 border-b border-white/5 shrink-0">
+              <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20">
+                <SafetyOutlined class="text-xl text-white" />
+              </div>
+              <span class="text-lg font-bold text-white tracking-tight">{{ t('sidebar.title', 'APEX 安全防护') }}</span>
             </div>
             
-            <Dropdown trigger="click">
-              <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl group cursor-pointer hover:bg-white/10 transition-all">
-                <Space>
-                  <Avatar size="small" class="bg-cyan-500">
-                    <template #icon><UserOutlined /></template>
-                  </Avatar>
-                  <span class="text-sm font-medium text-white">{{ t('user.admin', 'admin') }}</span>
-                </Space>
-                <DownOutlined class="text-xs text-slate-500 group-hover:text-white transition-colors" />
+            <Menu
+              theme="dark"
+              mode="inline"
+              :selectedKeys="[activeMenu]"
+              :items="menuItems"
+              @click="handleMenuClick"
+              class="flex-1 min-h-0 py-4 border-none overflow-y-auto overflow-x-hidden custom-scrollbar"
+            />
+
+            <div class="p-4 border-t border-white/5 space-y-4 shrink-0">
+              <div class="flex items-center justify-around text-slate-400">
+                <Button type="text" class="hover:text-white">
+                  <template #icon><AppstoreOutlined class="text-slate-400" /></template>
+                </Button>
+                <Button type="text" class="hover:text-white">
+                  <template #icon><UserOutlined class="text-slate-400" /></template>
+                </Button>
+                <Button type="text" class="hover:text-white">
+                  <template #icon><HomeOutlined class="text-slate-400" /></template>
+                </Button>
               </div>
-              <template #overlay>
-                <Menu @click="handleUserMenuClick" :items="userMenuItems" />
-              </template>
-            </Dropdown>
+              
+              <Dropdown trigger="click">
+                <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl group cursor-pointer hover:bg-white/10 transition-all">
+                  <Space>
+                    <Avatar size="small" class="bg-cyan-500">
+                      <template #icon><UserOutlined /></template>
+                    </Avatar>
+                    <span class="text-sm font-medium text-white">{{ t('user.admin', 'admin') }}</span>
+                  </Space>
+                  <DownOutlined class="text-xs text-slate-500 group-hover:text-white transition-colors" />
+                </div>
+                <template #overlay>
+                  <Menu @click="handleUserMenuClick" :items="userMenuItems" />
+                </template>
+              </Dropdown>
+            </div>
           </div>
         </Sider>
 
@@ -321,6 +348,15 @@ const currentMenuTitle = computed(() => {
               </template>
               <template v-else-if="activeMenu === 'app_center'">
                 <AppCenter />
+              </template>
+              <template v-else-if="activeMenu === 'ui_data_entry'">
+                <UIDataEntry />
+              </template>
+              <template v-else-if="activeMenu === 'ui_data_display'">
+                <UIDataDisplay />
+              </template>
+              <template v-else-if="activeMenu === 'ui_feedback'">
+                <UIFeedback />
               </template>
               <template v-else-if="activeMenu === 'asset_center'">
                 <AssetTable />
@@ -550,5 +586,20 @@ body {
 .flex-table .ant-table-body {
   flex: 1;
   overflow-y: auto;
+}
+
+/* Custom Scrollbar for dark theme Sider */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 </style>
